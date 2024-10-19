@@ -9,16 +9,19 @@ import axios, { AxiosError } from "axios"
 import { useSession } from "next-auth/react"
 import { useCallback, useEffect, useState } from "react"
 import { useForm } from "react-hook-form"
-import { ApiResponse } from "../../../../types/ApiResponse"
+import { ApiResponse } from "../../../types/ApiResponse"
 import MessageCard from "@/components/MessageCard"
 import { Loader2, RefreshCcw } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { User } from "next-auth"
+import { useRouter } from "next/navigation"
 
-const page = () => {
+const UserDashboard = () => {
   const [messages, setMessages] = useState<Message[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const [isSwitchLoading, setIsSwitchLoading] = useState(false)
+  const [profileUrl, setProfileUrl] = useState<string>('')
+  const router = useRouter()
 
   const { toast } = useToast()
 
@@ -26,10 +29,10 @@ const page = () => {
     setMessages(messages.filter((message) => message._id !== messageId))
   }
 
-  const { data: session } = useSession()
+  const { data: session, status } = useSession()
 
   const form = useForm({
-    resolver: zodResolver(acceptMessageSchema)
+    resolver: zodResolver(acceptMessageSchema),
   })
 
   const { register, watch, setValue } = form
@@ -40,22 +43,22 @@ const page = () => {
     setIsSwitchLoading(true)
     try {
       const response = await axios.get<ApiResponse>('/api/accept-messages')
-      setValue('acceptMessages', response.data.isAcceptingMessage)
+      setValue('acceptMessages', response.data.isAcceptingMessages)
     } catch (error) {
       const axiosError = error as AxiosError<ApiResponse>
       toast({
         title: "Error",
-        description: axiosError.response?.data.message || "Failed to fetch message settings",
+        description: axiosError.response?.data.message ?? "Failed to fetch message settings",
         variant: "destructive"
       })
     } finally {
       setIsSwitchLoading(false)
     }
-  }, [setValue])
+  }, [setValue, toast])
 
   const fetchMessages = useCallback(async (refresh: boolean = false) => {
     setIsLoading(true)
-    setIsSwitchLoading(true)
+    setIsSwitchLoading(false)
     try {
       const response = await axios.get<ApiResponse>('/api/get-messages')
       setMessages(response.data.messages || [])
@@ -69,7 +72,7 @@ const page = () => {
       const axiosError = error as AxiosError<ApiResponse>
       toast({
         title: "Error",
-        description: axiosError.response?.data.message || "Failed to fetch message settings",
+        description: axiosError.response?.data.message ?? "Failed to fetch message settings",
         variant: "destructive"
       })
     } finally {
@@ -77,22 +80,40 @@ const page = () => {
       setIsSwitchLoading(false)
     }
 
-  }, [setIsLoading, setMessages])
+  }, [setMessages, toast])
 
   useEffect(() => {
-    if (!session || !session.user) return
-    fetchMessages()
-    fetchAcceptMessage()
-  }, [session, setValue, fetchAcceptMessage, fetchMessages])
+    if (status === "unauthenticated") {
+      router.push("/sign-in")
+    }
+  }, [status, router])
+
+  useEffect(() => {
+    // if (!session || !session.user) return;
+    if (status === 'authenticated') {
+      fetchMessages();
+      fetchAcceptMessage();
+    }
+  }, [status, fetchAcceptMessage, fetchMessages])
+
+  useEffect(() => {
+    if (status === "authenticated" && session?.user) {
+      const { username } = session.user as User
+      const baseUrl = `${window.location.protocol}//${window.location.host}`
+      setProfileUrl(`${baseUrl}/u/${username}`)
+    }
+  }, [status, session])
 
   // handle switch change
   const handleSwitchChange = async () => {
     try {
+      const toggleAcceptMessages = !acceptMessages
+
       const response = await axios.post<ApiResponse>('/api/accept-messages', {
-        acceptMessages: !acceptMessages
+        acceptMessages: toggleAcceptMessages
       })
 
-      setValue('acceptMessages', !acceptMessages)
+      setValue('acceptMessages', toggleAcceptMessages)
       toast({
         title: response.data.message,
         variant: "default"
@@ -101,19 +122,11 @@ const page = () => {
       const axiosError = error as AxiosError<ApiResponse>
       toast({
         title: "Error",
-        description: axiosError.response?.data.message || "Failed to fetch message settings",
+        description: axiosError.response?.data.message ?? "Failed to fetch message settings",
         variant: "destructive"
       })
     }
   }
-
-  if (!session || !session.user) {
-    return <div>Please Login</div>
-  }
-
-  const { username } = session?.user as User
-  const baseUrl = `${window.location.protocol}//${window.location.host}`
-  const profileUrl = `${baseUrl}/u/${username}`
 
   const copyToClipboard = () => {
     navigator.clipboard.writeText(profileUrl)
@@ -122,6 +135,27 @@ const page = () => {
       description: "Profile URL has been copied to clipboard"
     })
   }
+
+  // if (!session || !session.user) {
+  //   return <div>Please Login</div>
+  // }
+
+  if (status === 'loading') {
+    return (
+      <div className="flex justify-center items-center h-full">
+        <Loader2 className="h-8 w-8 animate-spin" />
+      </div>
+    )
+  }
+
+  if (status === 'unauthenticated') {
+    return null;
+  }
+
+  const { username } = session?.user as User
+
+  // const baseUrl = `${window.location.protocol}//${window.location.host}`
+  // const profileUrl = `${baseUrl}/u/${username}`
 
   return (
     <div className="my-8 mx-4 md:mx-8 lg:mx-auto p-6 bg-white rounded w-full max-w-6xl">
@@ -135,8 +169,9 @@ const page = () => {
             value={profileUrl}
             disabled
             className="input input-bordered w-full p-2 mr-2"
+            readOnly
           />
-          <Button onClick={copyToClipboard}>Copy</Button>
+          <Button onClick={copyToClipboard} disabled={!profileUrl}>Copy</Button>
         </div>
       </div>
 
@@ -184,4 +219,4 @@ const page = () => {
   )
 }
 
-export default page
+export default UserDashboard

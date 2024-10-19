@@ -1,5 +1,5 @@
 import dbConnect from "@/lib/dbConnect";
-import { getServerSession } from "next-auth";
+import { getServerSession } from "next-auth/next";
 import { authOptions } from "../auth/[...nextauth]/options";
 import { User } from "next-auth";
 import mongoose from "mongoose";
@@ -10,9 +10,10 @@ export async function GET(request: Request) {
 
     // get currently logged in user from session
     const session = await getServerSession(authOptions)
+    console.log("Session: ", session)
     const user: User = session?.user as User
 
-    if (!session || !session.user) {
+    if (!session || !user) {
         return Response.json({
             success: false,
             message: "Not Authenticated"
@@ -26,10 +27,10 @@ export async function GET(request: Request) {
 
     try {
         const user = await UserModel.aggregate([
-            { $match: { id: userId } },
-            { $unwind: '$messages' },
+            { $match: { _id: userId } },
+            { $unwind: { path: '$messages', preserveNullAndEmptyArrays: true } },
             { $sort: { 'messages.createdAt': -1 } },
-            { $group: { _id: '$_id', messages: { $push: 'messages' } } },
+            { $group: { _id: '$_id', messages: { $push: '$messages' } } },
         ])
 
         if (!user || user.length === 0) {
@@ -41,15 +42,18 @@ export async function GET(request: Request) {
             )
         }
 
+        const userMessages = user[0].messages.filter((msg: any) => msg != null)
+
         return Response.json({
             success: true,
-            messages: user[0].messages
+            // messages: user[0].messages
+            messages: userMessages
         },
             { status: 200 }
         )
     } catch (error) {
-        console.log("An unexpected error occured",error);
-        
+        console.log("An unexpected error occured", error);
+
         return Response.json({
             success: false,
             message: "An unexpected error occured"

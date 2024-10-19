@@ -7,7 +7,7 @@ import { useParams, useRouter } from 'next/navigation'
 import React from 'react'
 import { useForm } from 'react-hook-form'
 import * as z from 'zod'
-import { ApiResponse } from '../../../../../types/ApiResponse'
+import { ApiResponse } from '../../../../types/ApiResponse'
 import { FormControl, Form, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
@@ -19,11 +19,14 @@ const VerifyAccount = () => {
 
     const form = useForm<z.infer<typeof verifySchema>>({
         resolver: zodResolver(verifySchema),
+        defaultValues: {
+            code: ''
+        }
     })
 
     const onSubmit = async (data: z.infer<typeof verifySchema>) => {
         try {
-            const response = await axios.post('/api/verify-code', {
+            const response = await axios.post<ApiResponse>('/api/verify-code', {
                 username: params.username,
                 code: data.code
             })
@@ -33,7 +36,7 @@ const VerifyAccount = () => {
                 description: response.data.message
             })
 
-            router.replace('sign-in')   // redirect user to sign in route
+            router.replace('/sign-in')   // redirect user to sign in route
 
         } catch (error) {
             console.log("Error in signup of user", error);
@@ -41,7 +44,7 @@ const VerifyAccount = () => {
             // let errorMessage = axiosError.response?.data.message
             toast({
                 title: "Signup failed",
-                description: axiosError.response?.data.message,
+                description: axiosError.response?.data.message ?? 'An error occurred. Please try again.',
                 variant: "destructive"
             })
         }

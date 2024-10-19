@@ -10,7 +10,7 @@ const UsernameQuerySchema = z.object({
 export async function GET(request: Request) {
     await dbConnect()
 
-    // example -> localhost:3000/api/check-username-unique?username=neel?age=100
+    // example -> localhost:3000/api/check-username-unique?username=neel
     try {
         const { searchParams } = new URL(request.url)
         const queryParam = {
@@ -25,7 +25,7 @@ export async function GET(request: Request) {
             const usernameErrors = result.error.format().username?._errors || []
             return Response.json({
                 success: false,
-                message: usernameErrors?.length > 0 ? usernameErrors.join(',') : "Inavlid query paramters"
+                message: usernameErrors?.length > 0 ? usernameErrors.join(', ') : "Inavlid query paramters"
             }, { status: 400 })
         }
 
@@ -42,7 +42,7 @@ export async function GET(request: Request) {
         return Response.json({
             success: true,
             message: "Username is unique"
-        }, { status: 400 })
+        }, { status: 200 })
 
     } catch (error) {
         console.error("Error checking the username", error);

@@ -19,12 +19,12 @@ export const authOptions: NextAuthOptions = {
                 try {
                     const user = await UserModel.findOne({
                         $or: [
-                            { email: credentials.identifier.email },
-                            { username: credentials.identifier.username }
+                            { email: credentials.identifier },
+                            { username: credentials.identifier }
                         ]
                     })
                     if (!user) {
-                        throw new Error("No user found with this email")
+                        throw new Error("No user found with this email or username")
                     }
 
                     if (!user.isVerified) {
@@ -67,11 +67,11 @@ export const authOptions: NextAuthOptions = {
             return token
         }
     },
-    pages: {
-        signIn: '/sign-in'
-    },
     session: {
         strategy: "jwt"
     },
-    secret: process.env.NEXTAUTH_SECRET
+    secret: process.env.NEXTAUTH_SECRET,
+    pages: {
+        signIn: '/sign-in'
+    },
 }

@@ -9,8 +9,8 @@ import { useToast } from "@/components/ui/use-toast"
 import { useRouter } from "next/navigation"
 import { signUpSchema } from "@/schemas/signUpSchema"
 import axios, { AxiosError } from "axios"
-import { ApiResponse } from "../../../../types/ApiResponse"
-import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
+import { ApiResponse } from "../../../types/ApiResponse"
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Loader2 } from "lucide-react"
@@ -42,10 +42,10 @@ const page = () => {
                 setUsernameMessage('')
 
                 try {
-                    const response = await axios.get(`/api/check-username-unique?username=${username}`)
+                    const response = await axios.get<ApiResponse>(`/api/check-username-unique?username=${username}`)
                     console.log(response.data.message);
-                    let message = response.data.message
-                    setUsernameMessage(message)
+                    // let message = response.data.message
+                    setUsernameMessage(response.data.message)
                 } catch (error) {
                     const axiosError = error as AxiosError<ApiResponse>;
                     setUsernameMessage(axiosError.response?.data.message ?? "Error checking username")
@@ -111,7 +111,7 @@ const page = () => {
                                         </FormControl>
                                         {isCheckingUsername && <Loader2 className="animate-spin" />}
                                         <p className={`text-sm ${usernameMessage === "Username is unique" ? 'text-green-500' : 'text-red-500'}`}>
-                                            test {usernameMessage}
+                                            {usernameMessage}
                                         </p>
                                         <FormMessage />
                                     </FormItem>

@@ -1,6 +1,4 @@
-import { NextResponse } from 'next/server'
-import type { NextRequest } from 'next/server'
-export { default } from "next-auth/middleware"
+import { NextResponse, NextRequest } from 'next/server'
 import { getToken } from "next-auth/jwt"
 
 // This function can be marked `async` if using `await` inside
@@ -13,7 +11,7 @@ export async function middleware(request: NextRequest) {
             url.pathname.startsWith('/sign-in') ||
             url.pathname.startsWith('/sign-up') ||
             url.pathname.startsWith('/verify') ||
-            url.pathname.startsWith('/')
+            url.pathname === '/'
         )
     ) {
         return NextResponse.redirect(new URL('/dashboard', request.url))

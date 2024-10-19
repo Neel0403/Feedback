@@ -52,7 +52,7 @@ export async function POST(request: Request) {
                 verifyCode,
                 verifyCodeExpiry: expiryDate,
                 isVerified: false,
-                isAcceptingMessage: true,
+                isAcceptingMessages: true,
                 messages: []
             })
 
@@ -76,13 +76,16 @@ export async function POST(request: Request) {
         }, { status: 201 })
 
     } catch (error) {
-        console.error("Error registering the user");
-        return Response.json({
-            success: false,
-            message: "Error registering the user"
-        }, {
-            status: 500
-        })
+        console.error("Error registering the user", error);
+        return Response.json(
+            {
+                success: false,
+                message: "Error registering the user"
+            },
+            {
+                status: 500
+            }
+        )
     }
 }
 

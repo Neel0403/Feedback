@@ -3,24 +3,20 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
 import * as z from "zod"
 import Link from "next/link"
-import { useEffect, useState } from "react"
-import { useDebounceCallback } from 'usehooks-ts'
 import { useToast } from "@/components/ui/use-toast"
 import { useRouter } from "next/navigation"
-import { signUpSchema } from "@/schemas/signUpSchema"
-import axios, { AxiosError } from "axios"
-import { ApiResponse } from "../../../../types/ApiResponse"
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
-import { Loader2 } from "lucide-react"
 import { signInSchema } from "@/schemas/signInSchema"
-import { signIn } from "next-auth/react"
+import { signIn, useSession } from "next-auth/react"
+import { useEffect } from "react"
 
 const page = () => {
 
   const { toast } = useToast()
   const router = useRouter()
+  const { data: session, status } = useSession()
 
   const form = useForm<z.infer<typeof signInSchema>>({
     resolver: zodResolver(signInSchema),
@@ -29,6 +25,12 @@ const page = () => {
       password: ''
     }
   })
+
+  useEffect(() => {
+    if (status === 'authenticated') {
+      router.push('/dashboard')
+    }
+  }, [status, router])
 
   const onSubmit = async (data: z.infer<typeof signInSchema>) => {
     const result = await signIn('credentials', {
@@ -108,9 +110,9 @@ const page = () => {
           </Form>
           <div className="text-center mt-4">
             <p>
-              Already a member?{' '}
-              <Link href="/sign-in" className="text-blue-600 hover:text-blue-800">
-                Sign in
+              Not a member yet?{' '}
+              <Link href="/sign-up" className="text-blue-600 hover:text-blue-800">
+                Sign Up
               </Link>
             </p>
           </div>
